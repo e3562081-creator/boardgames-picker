@@ -16,10 +16,6 @@
       background: #fafafa;
     }
 
-    h1 {
-      margin-bottom: 20px;
-    }
-
     select, input, button {
       width: 260px;
       padding: 8px;
@@ -27,19 +23,15 @@
       display: block;
     }
 
-    button {
-      cursor: pointer;
-    }
-
     .game {
       margin: 6px 0;
       padding: 6px;
-      background: #ffffff;
+      background: #fff;
       border: 1px solid #ddd;
     }
 
     .error {
-      color: #888;
+      color: #999;
     }
   </style>
 </head>
@@ -53,8 +45,6 @@
   <option value="семейная">семейная</option>
   <option value="стратегия">стратегия</option>
   <option value="вечериночная">вечериночная</option>
-  <option value="абстрактная">абстрактная</option>
-  <option value="наследие">наследие</option>
 </select>
 
 <select id="difficulty">
@@ -73,14 +63,22 @@
 
 <script>
 const sheetId = "1RynBSu-vpp79TLS35tOIfd_eZhYmAAbc387HGv_PJps";
-const sheetName = "лист1";
+const sheetName = "Лист1"; // <-- ВАЖНО
 
 let games = [];
 
-/* загрузка данных */
+// загрузка данных
 fetch(`https://opensheet.elk.sh/${sheetId}/${sheetName}`)
   .then(r => r.json())
   .then(data => {
+    console.log("данные из таблицы:", data);
+
+    if (!data.length) {
+      document.getElementById("result").innerHTML =
+        "<p class='error'>таблица найдена, но данных нет</p>";
+      return;
+    }
+
     games = data.map(row => ({
       name: (row["название"] || "").toString().trim(),
       genre: (row["жанр"] || "").toString().trim().toLowerCase(),
@@ -89,14 +87,22 @@ fetch(`https://opensheet.elk.sh/${sheetId}/${sheetName}`)
       maxPlayers: Number(row["максимум игроков"]),
       time: Number(row["время игры"])
     }));
+
+    console.log("обработанные игры:", games);
   })
-  .catch(() => {
+  .catch(err => {
     document.getElementById("result").innerHTML =
-      "<p class='error'>ошибка загрузки данных</p>";
+      "<p class='error'>ошибка загрузки таблицы</p>";
+    console.error(err);
   });
 
-/* фильтрация */
 function filterGames() {
+  if (!games.length) {
+    document.getElementById("result").innerHTML =
+      "<p class='error'>данные ещё не загружены</p>";
+    return;
+  }
+
   const genre = document.getElementById("genre").value.toLowerCase();
   const difficulty = document.getElementById("difficulty").value.toLowerCase();
   const players = Number(document.getElementById("players").value);
@@ -110,23 +116,9 @@ function filterGames() {
   );
 
   const result = document.getElementById("result");
-
-  if (!filtered.length) {
-    result.innerHTML = "<p class='error'>подходящих игр не найдено</p>";
-    return;
-  }
-
-  result.innerHTML = filtered
-    .map(g =>
-      `<div class="game">
-        🎲 ${g.name}<br>
-        жанр: ${g.genre}<br>
-        игроки: ${g.minPlayers}–${g.maxPlayers}<br>
-        время: ${g.time} мин<br>
-        сложность: ${g.difficulty}
-      </div>`
-    )
-    .join("");
+  result.innerHTML = filtered.length
+    ? filtered.map(g => `<div class="game">🎲 ${g.name}</div>`).join("")
+    : "<p class='error'>подходящих игр не найдено</p>";
 }
 </script>
 
