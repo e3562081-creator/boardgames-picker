@@ -2,74 +2,94 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Подбор настольных игр</title>
+  <title>подбор настольных игр</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    select, input, button { margin: 5px 0; padding: 6px; }
-    .game { margin: 5px 0; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    select, input, button {
+      display: block;
+      margin: 8px 0;
+      padding: 6px;
+      width: 250px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .game {
+      margin: 6px 0;
+    }
   </style>
 </head>
 <body>
 
-<h1>🎲 Подбор настольных игр</h1>
+<h1>🎲 подбор настольных игр</h1>
 
 <select id="genre">
-  <option value="">Любой жанр</option>
-  <option value="семейная">Семейная</option>
-  <option value="стратегия">Стратегия</option>
-  <option value="вечериночная">Вечериночная</option>
-  <option value="абстрактная">Абстрактная</option>
-  <option value="наследие">Наследие</option>
+  <option value="">любой жанр</option>
+  <option value="семейная">семейная</option>
+  <option value="стратегия">стратегия</option>
+  <option value="вечериночная">вечериночная</option>
+  <option value="абстрактная">абстрактная</option>
+  <option value="наследие">наследие</option>
 </select>
-
-<br>
 
 <select id="difficulty">
-  <option value="">Любая сложность</option>
-  <option value="лёгкая">Лёгкая</option>
-  <option value="средняя">Средняя</option>
-  <option value="сложная">Сложная</option>
+  <option value="">любая сложность</option>
+  <option value="лёгкая">лёгкая</option>
+  <option value="средняя">средняя</option>
+  <option value="сложная">сложная</option>
 </select>
 
-<br>
+<input id="players" type="number" placeholder="количество игроков">
+<input id="time" type="number" placeholder="макс. время (мин)">
 
-<input id="players" type="number" placeholder="Количество игроков">
-<br>
-
-<input id="time" type="number" placeholder="Макс. время (мин)">
-<br>
-
-<button onclick="filterGames()">Подобрать игру</button>
+<button onclick="filterGames()">подобрать игру</button>
 
 <div id="result"></div>
 
 <script>
-const sheetId = "1RynBSu-vpp79TLS35tOIfd_eZhYmAAbc387HGv_PJps";
-const sheetName = "Лист1";
+const sheetid = "1RynBSu-vpp79TLS35tOIfd_eZhYmAAbc387HGv_PJps";
+const sheetname = "лист1";
 
 let games = [];
 
-fetch(`https://opensheet.elk.sh/${sheetId}/${sheetName}`)
-  .then(res => res.json())
-  .then(data => games = data);
+// загрузка данных из google sheets
+fetch(`https://opensheet.elk.sh/${sheetid}/${sheetname}`)
+  .then(response => response.json())
+  .then(data => {
+    games = data.map(g => ({
+      name: g["название"]?.toString().trim(),
+      genre: g["жанр"]?.toString().trim().toLowerCase(),
+      difficulty: g["сложность"]?.toString().trim().toLowerCase(),
+      players_min: Number(g["минимум игроков"]),
+      players_max: Number(g["максимум игроков"]),
+      time: Number(g["время игры"])
+    }));
+  });
 
+// фильтрация
 function filterGames() {
-  const genre = document.getElementById("genre").value;
-  const difficulty = document.getElementById("difficulty").value;
+  const genre = document.getElementById("genre").value.toLowerCase();
+  const difficulty = document.getElementById("difficulty").value.toLowerCase();
   const players = Number(document.getElementById("players").value);
   const time = Number(document.getElementById("time").value);
 
   const result = games.filter(g =>
-    (!genre || g["Жанр"] === genre) &&
-    (!difficulty || g["Сложность"] === difficulty) &&
-    (!players || (players >= Number(g["Минимум игроков"]) && players <= Number(g["Максимум игроков"]))) &&
-    (!time || Number(g["Время игры"]) <= time)
+    (!genre || g.genre === genre) &&
+    (!difficulty || g.difficulty === difficulty) &&
+    (!players || (players >= g.players_min && players <= g.players_max)) &&
+    (!time || g.time <= time)
   );
 
   const resultDiv = document.getElementById("result");
   resultDiv.innerHTML = result.length
-    ? result.map(g => `<div class="game">🎲 ${g["Название"]}</div>`).join("")
-    : "<p>Подходящих игр не найдено</p>";
+    ? result.map(g => `<div class="game">🎲 ${g.name}</div>`).join("")
+    : "<p>подходящих игр не найдено</p>";
 }
 </script>
 
