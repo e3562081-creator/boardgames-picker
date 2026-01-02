@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Подбор настольных игр</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    select, input, button { margin: 5px 0; padding: 6px; }
+    .game { margin: 5px 0; }
+  </style>
+</head>
+<body>
+
+<h1>🎲 Подбор настольных игр</h1>
+
+<select id="genre">
+  <option value="">Любой жанр</option>
+  <option value="семейная">Семейная</option>
+  <option value="стратегия">Стратегия</option>
+  <option value="вечериночная">Вечериночная</option>
+  <option value="абстрактная">Абстрактная</option>
+  <option value="наследие">Наследие</option>
+</select>
+
+<br>
+
+<select id="difficulty">
+  <option value="">Любая сложность</option>
+  <option value="лёгкая">Лёгкая</option>
+  <option value="средняя">Средняя</option>
+  <option value="сложная">Сложная</option>
+</select>
+
+<br>
+
+<input id="players" type="number" placeholder="Количество игроков">
+<br>
+
+<input id="time" type="number" placeholder="Макс. время (мин)">
+<br>
+
+<button onclick="filterGames()">Подобрать игру</button>
+
+<div id="result"></div>
+
+<script>
+const sheetId = "1RynBSu-vpp79TLS35tOIfd_eZhYmAAbc387HGv_PJps";
+const sheetName = "Лист1";
+
+let games = [];
+
+fetch(`https://opensheet.elk.sh/${sheetId}/${sheetName}`)
+  .then(res => res.json())
+  .then(data => games = data);
+
+function filterGames() {
+  const genre = document.getElementById("genre").value;
+  const difficulty = document.getElementById("difficulty").value;
+  const players = Number(document.getElementById("players").value);
+  const time = Number(document.getElementById("time").value);
+
+  const result = games.filter(g =>
+    (!genre || g["Жанр"] === genre) &&
+    (!difficulty || g["Сложность"] === difficulty) &&
+    (!players || (players >= Number(g["Минимум игроков"]) && players <= Number(g["Максимум игроков"]))) &&
+    (!time || Number(g["Время игры"]) <= time)
+  );
+
+  const resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = result.length
+    ? result.map(g => `<div class="game">🎲 ${g["Название"]}</div>`).join("")
+    : "<p>Подходящих игр не найдено</p>";
+}
+</script>
+
+</body>
+</html>
