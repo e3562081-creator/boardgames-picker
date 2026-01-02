@@ -3,17 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <title>подбор настольных игр</title>
+
   <style>
+    * {
+      box-sizing: border-box;
+      text-transform: lowercase;
+    }
+
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
+      background: #fafafa;
+    }
+
+    h1 {
+      margin-bottom: 20px;
     }
 
     select, input, button {
+      width: 260px;
+      padding: 8px;
+      margin-bottom: 10px;
       display: block;
-      margin: 8px 0;
-      padding: 6px;
-      width: 250px;
     }
 
     button {
@@ -22,9 +33,17 @@
 
     .game {
       margin: 6px 0;
+      padding: 6px;
+      background: #ffffff;
+      border: 1px solid #ddd;
+    }
+
+    .error {
+      color: #888;
     }
   </style>
 </head>
+
 <body>
 
 <h1>🎲 подбор настольных игр</h1>
@@ -53,43 +72,61 @@
 <div id="result"></div>
 
 <script>
-const sheetid = "1RynBSu-vpp79TLS35tOIfd_eZhYmAAbc387HGv_PJps";
-const sheetname = "лист1";
+const sheetId = "1RynBSu-vpp79TLS35tOIfd_eZhYmAAbc387HGv_PJps";
+const sheetName = "лист1";
 
 let games = [];
 
-// загрузка данных из google sheets
-fetch(`https://opensheet.elk.sh/${sheetid}/${sheetname}`)
-  .then(response => response.json())
+/* загрузка данных */
+fetch(`https://opensheet.elk.sh/${sheetId}/${sheetName}`)
+  .then(r => r.json())
   .then(data => {
-    games = data.map(g => ({
-      name: g["название"]?.toString().trim(),
-      genre: g["жанр"]?.toString().trim().toLowerCase(),
-      difficulty: g["сложность"]?.toString().trim().toLowerCase(),
-      players_min: Number(g["минимум игроков"]),
-      players_max: Number(g["максимум игроков"]),
-      time: Number(g["время игры"])
+    games = data.map(row => ({
+      name: (row["название"] || "").toString().trim(),
+      genre: (row["жанр"] || "").toString().trim().toLowerCase(),
+      difficulty: (row["сложность"] || "").toString().trim().toLowerCase(),
+      minPlayers: Number(row["минимум игроков"]),
+      maxPlayers: Number(row["максимум игроков"]),
+      time: Number(row["время игры"])
     }));
+  })
+  .catch(() => {
+    document.getElementById("result").innerHTML =
+      "<p class='error'>ошибка загрузки данных</p>";
   });
 
-// фильтрация
+/* фильтрация */
 function filterGames() {
   const genre = document.getElementById("genre").value.toLowerCase();
   const difficulty = document.getElementById("difficulty").value.toLowerCase();
   const players = Number(document.getElementById("players").value);
   const time = Number(document.getElementById("time").value);
 
-  const result = games.filter(g =>
+  const filtered = games.filter(g =>
     (!genre || g.genre === genre) &&
     (!difficulty || g.difficulty === difficulty) &&
-    (!players || (players >= g.players_min && players <= g.players_max)) &&
+    (!players || (players >= g.minPlayers && players <= g.maxPlayers)) &&
     (!time || g.time <= time)
   );
 
-  const resultDiv = document.getElementById("result");
-  resultDiv.innerHTML = result.length
-    ? result.map(g => `<div class="game">🎲 ${g.name}</div>`).join("")
-    : "<p>подходящих игр не найдено</p>";
+  const result = document.getElementById("result");
+
+  if (!filtered.length) {
+    result.innerHTML = "<p class='error'>подходящих игр не найдено</p>";
+    return;
+  }
+
+  result.innerHTML = filtered
+    .map(g =>
+      `<div class="game">
+        🎲 ${g.name}<br>
+        жанр: ${g.genre}<br>
+        игроки: ${g.minPlayers}–${g.maxPlayers}<br>
+        время: ${g.time} мин<br>
+        сложность: ${g.difficulty}
+      </div>`
+    )
+    .join("");
 }
 </script>
 
